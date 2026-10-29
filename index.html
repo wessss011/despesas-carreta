@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B5D3B">
+<title>Despesas da Carreta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1EE; --surface:#FFFFFF; --ink:#1D2326; --muted:#58636A; --line:#D7DDD9;
+  --sign:#0B5D3B; --sign-ink:#FFFFFF; --sign-soft:rgba(255,255,255,.75);
+  --amber:#F2B705; --amber-ink:#1D2326; --danger:#B3261E; --good:#0B5D3B; --focus:#0B5D3B;
+  --body:"Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --display:"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121715; --surface:#1C2320; --ink:#ECF0ED; --muted:#A0AAA4; --line:#2C3531;
+    --sign:#0F6E46; --danger:#F08A83; --good:#6FD3A0; --focus:#F2B705; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121715; --surface:#1C2320; --ink:#ECF0ED; --muted:#A0AAA4; --line:#2C3531;
+  --sign:#0F6E46; --danger:#F08A83; --good:#6FD3A0; --focus:#F2B705; color-scheme: dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:480px;margin:0 auto;padding:16px 16px 120px}
+
+/* Topo, configurações e backup */
+.topo{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.app-nome{font-family:var(--display);font-weight:600;font-size:1.1rem;color:var(--muted)}
+.engrenagem{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:1.3rem;cursor:pointer}
+.secao{margin-top:22px;border-top:1px solid var(--line)}
+.dica{margin:0 0 10px;color:var(--muted);font-size:.92rem}
+.largo{width:100%;padding:14px}
+.largo + .largo{margin-top:8px}
+
+/* Placa de rodovia */
+.sign{background:var(--sign);color:var(--sign-ink);border-radius:14px;padding:6px;box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.sign-inner{border:2px solid var(--sign-ink);border-radius:10px;padding:14px 16px 16px}
+.month{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.month h1{font-family:var(--display);font-weight:600;font-size:1.25rem;margin:0}
+.arrow{width:44px;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,.14);color:var(--sign-ink);font-size:1.3rem;cursor:pointer;display:grid;place-items:center}
+.arrow:active{background:rgba(255,255,255,.26)}
+.total-label{margin:14px 0 0;color:var(--sign-soft);font-size:.95rem}
+.total{font-family:var(--display);font-weight:700;font-size:2.9rem;line-height:1.05;margin:2px 0 0;font-variant-numeric:tabular-nums}
+.trip{margin:4px 0 0;color:var(--sign-soft);font-size:.95rem}
+.rows{list-style:none;margin:16px 0 0;padding:12px 0 0;border-top:2px solid rgba(255,255,255,.35)}
+.rows li{display:flex;align-items:baseline;gap:10px;padding:5px 0;font-family:var(--display);font-size:1.15rem;font-weight:500}
+.rows .name{white-space:nowrap}
+.rows .dots{flex:1;border-bottom:2px dotted rgba(255,255,255,.45);transform:translateY(-4px)}
+.rows .val{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.rows li.sum{margin-top:6px;padding-top:9px;border-top:1px solid rgba(255,255,255,.35)}
+.rows li.sum .dots{border-bottom-color:transparent}
+.rows .empty-row{color:var(--sign-soft);font-family:var(--body);font-size:.95rem}
+
+/* Abas */
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:20px 0 4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{border:0;background:transparent;border-radius:9px;padding:10px;font-family:var(--display);font-weight:600;font-size:1.1rem;cursor:pointer;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--sign);color:var(--sign-ink)}
+
+/* Lista de despesas */
+.day{margin:18px 0 6px;color:var(--muted);font-size:.92rem;font-weight:500}
+.item{width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 8px;cursor:pointer;min-height:64px}
+.item:active,.fcard:active{transform:scale(.99)}
+.ic{font-size:1.5rem;width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:var(--bg);flex:none}
+.item .txt{flex:1;min-width:0}
+.item .cat{font-weight:600;display:block}
+.item .note{color:var(--muted);font-size:.92rem;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .v{font-family:var(--display);font-weight:600;font-size:1.2rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Cartão de frete */
+.fcard{width:100%;display:block;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin:14px 0 0;cursor:pointer}
+.ftop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.rota{font-family:var(--display);font-weight:600;font-size:1.25rem;line-height:1.2}
+.fval{font-family:var(--display);font-weight:700;font-size:1.3rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fsub{display:block;color:var(--muted);font-size:.92rem;margin-top:2px}
+.fstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.fstats small{display:block;color:var(--muted);font-size:.8rem;line-height:1.2}
+.fstats b{display:block;font-family:var(--display);font-weight:600;font-size:1.08rem;font-variant-numeric:tabular-nums;margin-top:2px}
+.fstats b.pos{color:var(--good)} .fstats b.neg{color:var(--danger)}
+
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:22px 18px;color:var(--muted);margin-top:14px}
+.empty p{margin:0 0 14px}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;color:var(--ink);font-weight:500}
+
+/* Botão fixo */
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.primary{display:block;width:100%;max-width:448px;margin:0 auto;border:0;border-radius:14px;background:var(--amber);color:var(--amber-ink);font-family:var(--display);font-weight:700;font-size:1.3rem;padding:16px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.primary:active{transform:translateY(1px);box-shadow:none}
+
+/* Formulários */
+dialog{border:0;padding:0;margin:auto auto 0;width:100%;max-width:480px;max-height:92vh;border-radius:18px 18px 0 0;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.sheet{padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));overflow:auto}
+.sheet h2{font-family:var(--display);font-weight:600;font-size:1.4rem;margin:0 0 6px}
+.lbl{display:block;font-weight:600;margin:16px 0 6px}
+.lbl small{font-weight:400;color:var(--muted)}
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cats button{border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.92rem;font-weight:500;min-height:72px}
+.cats button span{font-size:1.5rem}
+.cats button[aria-pressed="true"]{border-color:var(--sign);background:var(--sign);color:var(--sign-ink)}
+.money{display:flex;align-items:center;border:2px solid var(--line);border-radius:12px;background:var(--bg);padding:0 14px}
+.money:focus-within{border-color:var(--sign)}
+.money b{font-family:var(--display);font-size:1.4rem;color:var(--muted)}
+.money input{border:0;background:transparent;font-family:var(--display);font-weight:600;font-size:2rem;padding:10px 8px;width:100%;outline:none;font-variant-numeric:tabular-nums}
+.field{width:100%;border:2px solid var(--line);border-radius:12px;background:var(--bg);padding:12px 14px;font-size:1.05rem}
+.field:focus{border-color:var(--sign);outline:none}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pair .lbl{margin-top:16px}
+.calc{margin-top:16px;background:var(--sign);color:var(--sign-ink);border-radius:12px;padding:12px 14px}
+.calc div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-family:var(--display);font-size:1.1rem}
+.calc b{font-variant-numeric:tabular-nums}
+.err{color:var(--danger);font-size:.92rem;margin:6px 0 0;min-height:1.2em}
+.actions{display:flex;gap:10px;margin-top:18px}
+.actions .primary{flex:2}
+.actions .ghost{flex:1;padding:14px}
+.del{display:block;width:100%;margin-top:12px;background:transparent;border:0;color:var(--danger);font-weight:600;padding:12px;cursor:pointer}
+
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="topo">
+    <span class="app-nome">Despesas da Carreta</span>
+    <button class="engrenagem" id="config" aria-label="Configurações">⚙️</button>
+  </header>
+
+  <section class="sign" aria-label="Resumo do mês">
+    <div class="sign-inner">
+      <div class="month">
+        <button class="arrow" id="prev" aria-label="Mês anterior">‹</button>
+        <h1 id="monthName">Mês</h1>
+        <button class="arrow" id="next" aria-label="Próximo mês">›</button>
+      </div>
+      <p class="total-label">Saldo do mês</p>
+      <p class="total" id="total">R$ 0,00</p>
+      <p class="trip" id="trip"></p>
+      <ul class="rows" id="rows"></ul>
+    </div>
+  </section>
+
+  <div class="tabs" role="tablist" aria-label="Ver lançamentos">
+    <button role="tab" id="tabD" aria-selected="true">Despesas</button>
+    <button role="tab" id="tabF" aria-selected="false">Fretes</button>
+  </div>
+  <div id="list"></div>
+</main>
+
+<div class="bar"><button class="primary" id="add">+ Lançar despesa</button></div>
+
+<!-- Formulário de despesa -->
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form class="sheet" id="form" novalidate>
+    <h2 id="dlgTitle">Nova despesa</h2>
+    <span class="lbl" id="catLbl">Tipo</span>
+    <div class="cats" id="cats" role="group" aria-labelledby="catLbl"></div>
+
+    <label class="lbl" for="valor">Valor</label>
+    <div class="money"><b>R$</b><input id="valor" inputmode="decimal" autocomplete="off" placeholder="0,00"></div>
+    <p class="err" id="err" role="alert"></p>
+
+    <label class="lbl" for="data">Data</label>
+    <input class="field" type="date" id="data">
+
+    <label class="lbl" for="freteSel">Frete <small>(opcional)</small></label>
+    <select class="field" id="freteSel"></select>
+
+    <label class="lbl" for="obs">Observação <small>(opcional)</small></label>
+    <input class="field" id="obs" placeholder="Ex.: Posto Graal, km 312" maxlength="80">
+
+    <div class="actions">
+      <button type="button" class="ghost" data-close>Cancelar</button>
+      <button type="submit" class="primary" id="saveBtn">Salvar</button>
+    </div>
+    <button type="button" class="del" id="delBtn" hidden>Excluir despesa</button>
+  </form>
+</dialog>
+
+<!-- Formulário de frete -->
+<dialog id="dlgF" aria-labelledby="dlgFTitle">
+  <form class="sheet" id="formF" novalidate>
+    <h2 id="dlgFTitle">Novo frete</h2>
+
+    <div class="pair">
+      <div><label class="lbl" for="origem">Origem <small>(opcional)</small></label>
+        <input class="field" id="origem" placeholder="São Paulo" maxlength="40"></div>
+      <div><label class="lbl" for="destino">Destino</label>
+        <input class="field" id="destino" placeholder="Curitiba" maxlength="40"></div>
+    </div>
+
+    <label class="lbl" for="fvalor">Valor do frete</label>
+    <div class="money"><b>R$</b><input id="fvalor" inputmode="decimal" autocomplete="off" placeholder="0,00"></div>
+
+    <div class="pair">
+      <div><label class="lbl" for="km">Km rodados</label>
+        <input class="field" id="km" inputmode="numeric" placeholder="410"></div>
+      <div><label class="lbl" for="pct">Motorista (%)</label>
+        <input class="field" id="pct" inputmode="decimal" value="12"></div>
+    </div>
+
+    <label class="lbl" for="fdata">Data</label>
+    <input class="field" type="date" id="fdata">
+
+    <div class="calc" aria-live="polite">
+      <div><span id="calcPctLbl">Motorista recebe (12%)</span><b id="calcMot">R$ 0,00</b></div>
+      <div><span>Fica para a carreta</span><b id="calcResto">R$ 0,00</b></div>
+    </div>
+    <p class="err" id="errF" role="alert"></p>
+
+    <div class="actions">
+      <button type="button" class="ghost" data-close>Cancelar</button>
+      <button type="submit" class="primary" id="saveFBtn">Salvar frete</button>
+    </div>
+    <button type="button" class="del" id="delFBtn" hidden>Excluir frete</button>
+  </form>
+</dialog>
+
+<!-- Formulário de configurações -->
+<dialog id="dlgC" aria-labelledby="dlgCTitle">
+  <form class="sheet" id="formC" novalidate>
+    <h2 id="dlgCTitle">Configurações</h2>
+
+    <label class="lbl" for="pctPadrao">Percentual padrão do motorista (%)</label>
+    <input class="field" id="pctPadrao" inputmode="decimal">
+    <p class="err" id="errC" role="alert"></p>
+
+    <div class="actions">
+      <button type="button" class="ghost" data-close>Cancelar</button>
+      <button type="submit" class="primary">Salvar</button>
+    </div>
+
+    <div class="secao">
+      <span class="lbl">Backup</span>
+      <p class="dica">Baixa um arquivo com todas as despesas, fretes e configurações. Guarde no Google Drive ou mande para você mesmo no WhatsApp.</p>
+      <button type="button" class="ghost largo" id="exportar">Baixar backup</button>
+      <button type="button" class="ghost largo" id="importar">Restaurar backup</button>
+      <input type="file" id="arquivo" accept=".json,application/json" hidden>
+      <p class="err" id="errB" role="alert"></p>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const CATS = [
+  {id:'diesel', label:'Diesel', icon:'⛽'},
+  {id:'manutencao', label:'Manutenção', icon:'🔧'},
+  {id:'pedagio', label:'Pedágio', icon:'🛣️'},
+  {id:'tarifas', label:'Tarifas', icon:'📄'},
+  {id:'motorista', label:'Motorista', icon:'👤'},
+  {id:'outros', label:'Outros', icon:'📦'}
+];
+const KEY_D = 'carreta.despesas', KEY_F = 'carreta.fretes', PCT_PADRAO = 12;
+const brl = new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'});
+const num = new Intl.NumberFormat('pt-BR');
+const $ = id => document.getElementById(id);
+
+let despesas = carregar(KEY_D);
+let fretes = carregar(KEY_F);
+const hoje = new Date();
+let ano = hoje.getFullYear(), mes = hoje.getMonth(), aba = 'despesas';
+let editandoId = null, editandoFreteId = null, catSel = 'diesel', confirmar = false, confirmarF = false;
+
+/* ---------- utilidades ---------- */
+function carregar(k){ try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e){ return []; } }
+function salvar(){
+  try { localStorage.setItem(KEY_D, JSON.stringify(despesas)); localStorage.setItem(KEY_F, JSON.stringify(fretes)); } catch(e){}
+}
+function isoHoje(){ const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+function cat(id){ return CATS.find(c => c.id === id) || CATS[5]; }
+function lerValor(txt){
+  let t = String(txt).trim().replace(/\s|R\$/g,'');
+  if (t.includes(',')) t = t.replace(/\./g,'').replace(',','.');
+  const n = Number(t);
+  return t !== '' && Number.isFinite(n) ? Math.round(n*100)/100 : NaN;
+}
+function campo(n){ return n.toFixed(2).replace('.',','); }
+function pctTxt(p){ return String(p).replace('.',','); }
+function escapar(s){ return String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
+function novoId(){ return String(Date.now()) + Math.random().toString(36).slice(2,6); }
+function prefixo(){ return `${ano}-${String(mes+1).padStart(2,'0')}`; }
+function dataLonga(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  const t = new Date(y, m-1, d).toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+function dataCurta(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString('pt-BR', {day:'numeric', month:'short'}); }
+function comissao(f){ return Math.round(f.valor * f.pct) / 100; }
+function rota(f){ return (f.origem ? f.origem + ' → ' : 'Para ') + f.destino; }
+function despesasDoFrete(fid){ return despesas.filter(d => d.freteId === fid).reduce((s,d) => s + d.valor, 0); }
+
+/* ---------- tela principal ---------- */
+function render(){
+  const nome = new Date(ano, mes, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+  $('monthName').textContent = nome.charAt(0).toUpperCase() + nome.slice(1);
+
+  const fm = fretes.filter(f => f.data.startsWith(prefixo()));
+  const dm = despesas.filter(d => d.data.startsWith(prefixo()));
+  const receita = fm.reduce((s,f) => s + f.valor, 0);
+  const totCom = fm.reduce((s,f) => s + comissao(f), 0);
+  const totDesp = dm.reduce((s,d) => s + d.valor, 0) + totCom;
+  const km = fm.reduce((s,f) => s + (f.km || 0), 0);
+
+  $('total').textContent = brl.format(receita - totDesp);
+  $('trip').textContent = fm.length
+    ? `${fm.length} ${fm.length === 1 ? 'frete' : 'fretes'}${km ? `, ${num.format(km)} km rodados` : ''}`
+    : '';
+
+  const porCat = {};
+  dm.forEach(d => porCat[d.cat] = (porCat[d.cat]||0) + d.valor);
+  const linhas = Object.entries(porCat).map(([c,v]) => [cat(c).label, v]);
+  if (totCom) linhas.push(['Comissão do motorista', totCom]);
+  linhas.sort((a,b) => b[1]-a[1]);
+
+  let html = '';
+  if (receita) html += linha('Fretes', brl.format(receita));
+  linhas.forEach(([n,v]) => html += linha(n, '− ' + brl.format(v)));
+  if (receita || linhas.length) html += linha('Total de despesas', '− ' + brl.format(totDesp), 'sum');
+  $('rows').innerHTML = html || `<li class="empty-row">Nada lançado neste mês.</li>`;
+
+  $('tabD').setAttribute('aria-selected', aba === 'despesas');
+  $('tabF').setAttribute('aria-selected', aba === 'fretes');
+  $('add').textContent = aba === 'despesas' ? '+ Lançar despesa' : '+ Lançar frete';
+  aba === 'despesas' ? listaDespesas(dm) : listaFretes(fm);
+}
+function linha(n, v, cls=''){ return `<li class="${cls}"><span class="name">${n}</span><span class="dots"></span><span class="val">${v}</span></li>`; }
+
+function vazio(msg){
+  $('list').innerHTML = `<div class="empty"><p>${msg}</p><button class="ghost" id="exemplo">Ver com dados de exemplo</button></div>`;
+  $('exemplo').onclick = carregarExemplo;
+}
+
+function listaDespesas(dm){
+  if (!dm.length) return vazio('Nenhuma despesa neste mês. Toque em “Lançar despesa” sempre que pagar algo na estrada.');
+  const ord = [...dm].sort((a,b) => b.data.localeCompare(a.data) || b.criado - a.criado);
+  let html = '', dia = '';
+  ord.forEach(d => {
+    if (d.data !== dia){ dia = d.data; html += `<p class="day">${dataLonga(d.data)}</p>`; }
+    const c = cat(d.cat), f = fretes.find(x => x.id === d.freteId);
+    const nota = [d.obs, f ? 'Frete para ' + f.destino : ''].filter(Boolean).join(', ');
+    html += `<button class="item" data-id="${d.id}">
+      <span class="ic" aria-hidden="true">${c.icon}</span>
+      <span class="txt"><span class="cat">${c.label}</span>${nota ? `<span class="note">${escapar(nota)}</span>` : ''}</span>
+      <span class="v">${brl.format(d.valor)}</span></button>`;
+  });
+  $('list').innerHTML = html;
+  $('list').querySelectorAll('.item').forEach(b => b.onclick = () => abrirDespesa(b.dataset.id));
+}
+
+function listaFretes(fm){
+  if (!fm.length) return vazio('Nenhum frete neste mês. Toque em “Lançar frete” para registrar destino, km e valor.');
+  const ord = [...fm].sort((a,b) => b.data.localeCompare(a.data) || b.criado - a.criado);
+  $('list').innerHTML = ord.map(f => {
+    const com = comissao(f), desp = despesasDoFrete(f.id), sobra = f.valor - com - desp;
+    const sub = [dataCurta(f.data), f.km ? num.format(f.km) + ' km' : '', f.km ? brl.format(f.valor / f.km) + ' por km' : ''].filter(Boolean).join(', ');
+    return `<button class="fcard" data-id="${f.id}">
+      <span class="ftop"><span class="rota">${escapar(rota(f))}</span><span class="fval">${brl.format(f.valor)}</span></span>
+      <span class="fsub">${sub}</span>
+      <span class="fstats">
+        <span><small>Motorista (${pctTxt(f.pct)}%)</small><b>${brl.format(com)}</b></span>
+        <span><small>Despesas ligadas</small><b>${brl.format(desp)}</b></span>
+        <span><small>Sobrou</small><b class="${sobra >= 0 ? 'pos' : 'neg'}">${brl.format(sobra)}</b></span>
+      </span></button>`;
+  }).join('');
+  $('list').querySelectorAll('.fcard').forEach(b => b.onclick = () => abrirFrete(b.dataset.id));
+}
+
+/* ---------- despesa ---------- */
+function renderCats(){
+  $('cats').innerHTML = CATS.map(c =>
+    `<button type="button" data-cat="${c.id}" aria-pressed="${c.id===catSel}"><span aria-hidden="true">${c.icon}</span>${c.label}</button>`).join('');
+  $('cats').querySelectorAll('button').forEach(b => b.onclick = () => { catSel = b.dataset.cat; renderCats(); });
+}
+function opcoesFrete(sel){
+  const ord = [...fretes].sort((a,b) => b.data.localeCompare(a.data)).slice(0, 30);
+  $('freteSel').innerHTML = `<option value="">Nenhum</option>` +
+    ord.map(f => `<option value="${f.id}" ${f.id === sel ? 'selected' : ''}>${dataCurta(f.data)}, ${escapar(rota(f))}</option>`).join('');
+}
+function abrirDespesa(id){
+  editandoId = id || null; confirmar = false;
+  const d = id ? despesas.find(x => x.id === id) : null;
+  $('dlgTitle').textContent = d ? 'Editar despesa' : 'Nova despesa';
+  $('saveBtn').textContent = d ? 'Salvar alterações' : 'Salvar';
+  $('delBtn').hidden = !d; $('delBtn').textContent = 'Excluir despesa';
+  $('err').textContent = '';
+  catSel = d ? d.cat : 'diesel';
+  $('valor').value = d ? campo(d.valor) : '';
+  $('data').value = d ? d.data : isoHoje();
+  $('obs').value = d ? d.obs : '';
+  opcoesFrete(d ? d.freteId : '');
+  renderCats();
+  $('dlg').showModal();
+  if (!d) setTimeout(() => $('valor').focus(), 50);
+}
+$('form').onsubmit = e => {
+  e.preventDefault();
+  const valor = lerValor($('valor').value);
+  if (!(valor > 0)){ $('err').textContent = 'Digite um valor maior que zero, por exemplo 350,00.'; $('valor').focus(); return; }
+  const dados = { cat:catSel, valor, data:$('data').value || isoHoje(), obs:$('obs').value.trim(), freteId:$('freteSel').value || null };
+  if (editandoId) Object.assign(despesas.find(x => x.id === editandoId), dados);
+  else despesas.push({ id:novoId(), criado:Date.now(), ...dados });
+  salvar(); irPara(dados.data); $('dlg').close(); render();
+  aviso(editandoId ? 'Alterações salvas' : 'Despesa salva');
+};
+$('delBtn').onclick = () => {
+  if (!confirmar){ confirmar = true; $('delBtn').textContent = 'Toque de novo para confirmar'; return; }
+  despesas = despesas.filter(x => x.id !== editandoId);
+  salvar(); $('dlg').close(); render(); aviso('Despesa excluída');
+};
+
+/* ---------- frete ---------- */
+function atualizarCalculo(){
+  const v = lerValor($('fvalor').value) || 0;
+  let p = lerValor($('pct').value); if (!(p >= 0)) p = 0;
+  const com = Math.round(v * p) / 100;
+  $('calcPctLbl').textContent = `Motorista recebe (${pctTxt(p)}%)`;
+  $('calcMot').textContent = brl.format(com);
+  $('calcResto').textContent = brl.format(v - com);
+}
+['fvalor','pct'].forEach(id => $(id).addEventListener('input', atualizarCalculo));
+
+function abrirFrete(id){
+  editandoFreteId = id || null; confirmarF = false;
+  const f = id ? fretes.find(x => x.id === id) : null;
+  $('dlgFTitle').textContent = f ? 'Editar frete' : 'Novo frete';
+  $('saveFBtn').textContent = f ? 'Salvar alterações' : 'Salvar frete';
+  $('delFBtn').hidden = !f; $('delFBtn').textContent = 'Excluir frete';
+  $('errF').textContent = '';
+  $('origem').value = f ? f.origem : '';
+  $('destino').value = f ? f.destino : '';
+  $('fvalor').value = f ? campo(f.valor) : '';
+  $('km').value = f && f.km ? f.km : '';
+  $('pct').value = pctTxt(f ? f.pct : lerPctPadrao());
+  $('fdata').value = f ? f.data : isoHoje();
+  atualizarCalculo();
+  $('dlgF').showModal();
+  if (!f) setTimeout(() => $('origem').focus(), 50);
+}
+$('formF').onsubmit = e => {
+  e.preventDefault();
+  const destino = $('destino').value.trim();
+  const valor = lerValor($('fvalor').value);
+  const pct = lerValor($('pct').value);
+  const km = parseInt(String($('km').value).replace(/\D/g,''), 10) || 0;
+  if (!destino){ $('errF').textContent = 'Informe o destino do frete.'; $('destino').focus(); return; }
+  if (!(valor > 0)){ $('errF').textContent = 'Digite o valor do frete, por exemplo 6.800,00.'; $('fvalor').focus(); return; }
+  if (!(pct >= 0 && pct <= 100)){ $('errF').textContent = 'O percentual do motorista deve ficar entre 0 e 100.'; $('pct').focus(); return; }
+  const dados = { origem:$('origem').value.trim(), destino, valor, km, pct, data:$('fdata').value || isoHoje() };
+  if (editandoFreteId) Object.assign(fretes.find(x => x.id === editandoFreteId), dados);
+  else fretes.push({ id:novoId(), criado:Date.now(), ...dados });
+  salvar(); irPara(dados.data); $('dlgF').close(); render();
+  aviso(editandoFreteId ? 'Alterações salvas' : 'Frete salvo');
+};
+$('delFBtn').onclick = () => {
+  if (!confirmarF){ confirmarF = true; $('delFBtn').textContent = 'Toque de novo para confirmar'; return; }
+  fretes = fretes.filter(x => x.id !== editandoFreteId);
+  despesas.forEach(d => { if (d.freteId === editandoFreteId) d.freteId = null; });
+  salvar(); $('dlgF').close(); render(); aviso('Frete excluído');
+};
+
+/* ---------- navegação ---------- */
+function irPara(iso){ const [y,m] = iso.split('-').map(Number); ano = y; mes = m-1; }
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
+document.querySelectorAll('dialog').forEach(dl => dl.addEventListener('click', e => { if (e.target === dl) dl.close(); }));
+$('add').onclick = () => aba === 'despesas' ? abrirDespesa() : abrirFrete();
+
+/* ---------- configurações ---------- */
+const KEY_C = 'carreta.pctPadrao';
+
+function lerPctPadrao(){
+  try {
+    const salvo = localStorage.getItem(KEY_C);
+    if (salvo !== null) return Number(salvo);
+  } catch(e){}
+  return PCT_PADRAO;
+}
+
+$('config').onclick = () => {
+  $('pctPadrao').value = pctTxt(lerPctPadrao());
+  $('errC').textContent = '';
+  $('dlgC').showModal();
+};
+
+$('formC').onsubmit = e => {
+  e.preventDefault();
+  const pct = lerValor($('pctPadrao').value);
+  if (!(pct >= 0 && pct <= 100)){
+    $('errC').textContent = 'Digite um número entre 0 e 100, por exemplo 12.';
+    $('pctPadrao').focus();
+    return;
+  }
+  try { localStorage.setItem(KEY_C, pct); } catch(e){}
+  $('dlgC').close();
+  aviso('Percentual salvo');
+};
+
+/* ---------- backup ---------- */
+$('exportar').onclick = () => {
+  const backup = {
+    app: 'despesas-carreta',
+    versao: 1,
+    criadoEm: new Date().toISOString(),
+    pctPadrao: lerPctPadrao(),
+    despesas,
+    fretes
+  };
+  const texto = JSON.stringify(backup, null, 2);
+  const arquivo = new Blob([texto], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(arquivo);
+  link.download = `backup-carreta-${isoHoje()}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  aviso('Backup baixado');
+};
+
+$('importar').onclick = () => $('arquivo').click();
+
+$('arquivo').onchange = async () => {
+  const arq = $('arquivo').files[0];
+  $('arquivo').value = '';
+  $('errB').textContent = '';
+  if (!arq) return;
+
+  let backup;
+  try {
+    backup = JSON.parse(await arq.text());
+  } catch(e){
+    $('errB').textContent = 'Não foi possível ler esse arquivo. Escolha um backup gerado pelo app.';
+    return;
+  }
+
+  if (backup.app !== 'despesas-carreta' || !Array.isArray(backup.despesas) || !Array.isArray(backup.fretes)){
+    $('errB').textContent = 'Esse arquivo não é um backup do app de despesas.';
+    return;
+  }
+
+  const data = new Date(backup.criadoEm).toLocaleDateString('pt-BR');
+  const ok = confirm(`Restaurar o backup de ${data}?\n\n${backup.fretes.length} fretes e ${backup.despesas.length} despesas.\n\nOs dados atuais deste aparelho serão substituídos.`);
+  if (!ok) return;
+
+  despesas = backup.despesas;
+  fretes = backup.fretes;
+  salvar();
+  if (typeof backup.pctPadrao === 'number'){
+    try { localStorage.setItem(KEY_C, backup.pctPadrao); } catch(e){}
+  }
+  $('dlgC').close();
+  render();
+  aviso('Backup restaurado');
+};
+
+/* ---------- abas e meses ---------- */
+$('tabD').onclick = () => { aba = 'despesas'; render(); };
+$('tabF').onclick = () => { aba = 'fretes'; render(); };
+$('prev').onclick = () => { mes--; if (mes < 0){ mes = 11; ano--; } render(); };
+$('next').onclick = () => { mes++; if (mes > 11){ mes = 0; ano++; } render(); };
+
+function aviso(txt){
+  const t = $('toast'); t.textContent = txt; t.classList.add('show');
+  clearTimeout(aviso.tm); aviso.tm = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function carregarExemplo(){
+  const p = prefixo(), t = Date.now();
+  const f1 = {id:'exf1'+t, criado:t,   data:`${p}-03`, origem:'São Paulo', destino:'Curitiba', km:410, valor:6800, pct:12};
+  const f2 = {id:'exf2'+t, criado:t+1, data:`${p}-09`, origem:'Curitiba', destino:'Joinville', km:130, valor:3200, pct:12};
+  const f3 = {id:'exf3'+t, criado:t+2, data:`${p}-14`, origem:'Joinville', destino:'São Paulo', km:540, valor:7500, pct:12};
+  fretes.push(f1, f2, f3);
+  const ex = [
+    ['diesel', 1840.50, '03', 'Posto em Registro, 412 L', f1.id],
+    ['pedagio', 86.40, '03', 'Régis Bittencourt', f1.id],
+    ['diesel', 690.00, '09', 'Posto em Curitiba', f2.id],
+    ['pedagio', 38.20, '09', '', f2.id],
+    ['manutencao', 780.00, '11', 'Troca de lonas de freio', null],
+    ['tarifas', 145.90, '12', 'Taxa de balança', null],
+    ['diesel', 2210.00, '14', 'Posto em Joinville', f3.id],
+    ['pedagio', 112.80, '14', 'Volta para SP', f3.id],
+    ['outros', 58.00, '15', 'Lavagem', null]
+  ];
+  ex.forEach(([c,v,d,o,fid],i) => despesas.push({ id:'ex'+t+i, criado:t+i, cat:c, valor:v, data:`${p}-${d}`, obs:o, freteId:fid }));
+  salvar(); render(); aviso('Exemplos carregados');
+}
+
+render();
+</script>
+</body>
+</html>
